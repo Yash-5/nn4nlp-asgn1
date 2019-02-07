@@ -44,7 +44,8 @@ class CNN(tf.keras.Model):
     ):
         assert len(num_filters) == len(filter_sz)
         super(CNN, self).__init__()
-
+        
+        self.dropout_rate = dropout_rate
         self.conv_layers = []
 
         for c, k in zip(num_filters, filter_sz):
@@ -54,11 +55,15 @@ class CNN(tf.keras.Model):
                 activation=act,
                 padding="same"
             ))
+        self.dropout = tf.keras.layers.Dropout(rate=self.dropout_rate)
+        self.dense = tf.keras.layers.Dense(output_sz)
 
-        print(self.conv_layers)
-
-    def call(self, input):
+    def call(self, input, training=False):
         h = []
         for c in self.conv_layers:
             h.append(tf.math.reduce_max(c(input), axis=1))
-        return tf.concat(h, axis=1)
+        h = tf.concat(h, axis=1)
+        if training:
+            h = self.dropout(h, training=training)
+        h = self.dense(h)
+        return h
