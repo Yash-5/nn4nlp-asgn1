@@ -38,9 +38,18 @@ class CNN(tf.keras.Model):
             self,
             filter_sz=[3, 4, 5],
             num_filters=[100, 100, 100],
-            activation=[tf.keras.layers.ReLU],
+            act=tf.keras.layers.ReLU,
             dropout_rate=0.2,
             output_sz=5
     ):
         assert len(num_filters) == len(filter_sz)
         super(CNN, self).__init__()
+
+        self.conv_layers = []
+
+        for c, k in zip(num_filters, filter_sz):
+            self.conv_layers.append(tf.keras.layers.Conv1D(
+                filters=c,
+                kernel_size=k,
+                activation=act
+            ))
