@@ -38,7 +38,7 @@ class CNN(tf.keras.Model):
             self,
             filter_sz=[3, 4, 5],
             num_filters=[100, 100, 100],
-            act=tf.keras.layers.ReLU,
+            act=tf.keras.layers.ReLU(),
             dropout_rate=0.2,
             output_sz=5
     ):
@@ -51,5 +51,14 @@ class CNN(tf.keras.Model):
             self.conv_layers.append(tf.keras.layers.Conv1D(
                 filters=c,
                 kernel_size=k,
-                activation=act
+                activation=act,
+                padding="same"
             ))
+
+        print(self.conv_layers)
+
+    def call(self, input):
+        h = []
+        for c in self.conv_layers:
+            h.append(tf.math.reduce_max(c(input), axis=1))
+        return tf.concat(h, axis=1)
