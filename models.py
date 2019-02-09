@@ -1,12 +1,9 @@
 import tensorflow as tf
 import numpy as np
 
-tf.enable_eager_execution()
-
-class Embedding_model(tf.keras.Model):
+class Embedding_model():
     def __init__(self, emb_mat, mode="rand"):
 
-        super(Embedding_model, self).__init__()
         self.mode = mode
         self.vocab_sz, self.embed_sz = emb_mat.shape
 
@@ -15,62 +12,75 @@ class Embedding_model(tf.keras.Model):
         elif self.mode in ["rand", "nonstatic"]:
             self.emb_mat = tf.contrib.eager.Variable(emb_mat, trainable=True)
 
-    def call(self, input):
-        return tf.nn.embedding_lookup(self.emb_mat, input)
+    def build_model(self, input):
+        h = tf.nn.embedding_lookup(self.emb_mat, input)
+        return h
 
-class CNN(tf.keras.Model):
+class CNN():
     def __init__(
             self,
             filter_sz,
             num_filters,
             act,
             dropout_rate,
-            output_sz
+            output_sz,
+            name=""
     ):
-        super(CNN, self).__init__()
-        
+        self.filter_sz = filter_sz
+        self.num_filters = num_filters
+        self.act = act
         self.dropout_rate = dropout_rate
-        self.conv_layers = []
+        self.output_sz = output_sz
+        self.name = name
 
-        for c, k in zip(num_filters, filter_sz):
-            self.conv_layers.append(tf.keras.layers.Conv1D(
-                filters=c,
-                kernel_size=k,
-                activation=act,
-                padding="same"
-            ))
-        self.dropout = tf.keras.layers.Dropout(rate=self.dropout_rate)
-        self.dense = tf.keras.layers.Dense(output_sz)
-
-    def call(self, input, training=False):
+    def build_model(self, input, training):
         h = []
-        for c in self.conv_layers:
-            h.append(tf.math.reduce_max(c(input), axis=1))
+        for i, (n, k) in enumerate(zip(self.num_filters, self.filter_sz)):
+            h.append(tf.math.reduce_max(
+                tf.layers.conv1d(
+                    input,
+                    filters=n,
+                    kernel_size=k,
+                    activation=self.act,
+                    name=self.name + "conv" + str(i),
+                    reuse=tf.AUTO_REUSE
+                ),
+                axis=1
+            ))
         h = tf.concat(h, axis=1)
-        if training:
-            h = self.dropout(h, training=training)
-        h = self.dense(h)
+        h = tf.layers.dropout(
+            h,
+            rate=self.dropout_rate,
+            training=training
+        )
+        h = tf.layers.dense(
+                h,
+                units=self.output_sz,
+                activation=None,
+                name=self.name + "fc",
+                reuse=tf.AUTO_REUSE
+            )
         return h
 
-class Net(tf.keras.Model):
+class Net():
     def __init__(
             self,
             emb_mat,
             mode="rand",
             filter_sz=[3, 4, 5],
             num_filters=[100, 100, 100],
-            act=tf.keras.layers.ReLU(),
-            dropout_rate=0.2,
+            act=tf.nn.relu,
+            dropout_rate=0.5,
             output_sz=16
     ):
         assert mode in ["rand", "static", "nonstatic"], \
                                 "mode must be 'rand', 'static', 'nonstatic'"
         assert len(num_filters) == len(filter_sz)
-        super(Net, self).__init__()
         self.emb_model = Embedding_model(emb_mat, mode)
+
         self.cnn_model = CNN(filter_sz, num_filters, act, dropout_rate, output_sz)
 
-    def call(self, input, training=False):
-        h = self.emb_model(input)
-        h = self.cnn_model(h, training=True)
-        return h
+    def build_model(self, input, training):
+        embed_out = self.emb_model.build_model(input)
+        output = self.cnn_model.build_model(embed_out, training)
+        return output
