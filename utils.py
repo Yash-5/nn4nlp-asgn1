@@ -5,7 +5,7 @@ from collections import defaultdict
 
 label2index = defaultdict(lambda: len(label2index))
 word2index = defaultdict(lambda: len(word2index))
-word2index["<UNK>"]
+word2index["<UNK>"] # Putting UNK to 0
 
 def save_bin_vec(vocab, fname, save_name):
     known_word_vecs = []
@@ -76,3 +76,18 @@ def make_embed_mat(vocab_sz, embed_sz, known_word_embed):
         else:
             embed_mat[i] = rand_emb()
     return embed_mat
+
+def bin(X, Y, bin_val=10, pad=0):
+    #  temp = sorted(zip(X, y), key = lambda t:(len(t[0])+bin_val-1) // bin_val)
+
+    ret_X, ret_y = [], []
+    for x, y in zip(X, Y):
+        idx = (len(x) + bin_val - 1) // bin_val - 1
+        while idx >= len(ret_X):
+            ret_X.append([])
+            ret_y.append([])
+        ret_X[idx].append(x)
+        ret_y[idx].append(y)
+        while len(ret_X[idx][-1]) % bin_val:
+            ret_X[idx][-1].append(pad)
+    return ret_X, ret_y
