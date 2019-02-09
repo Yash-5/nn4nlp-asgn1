@@ -41,10 +41,6 @@ if __name__ == '__main__':
 
     embed_mat = utils.make_embed_mat(len(utils.word2index), embed_sz,
                                             known_word_embed)
-    print(embed_mat.shape)
-    print(np.mean(embed_mat, axis=0))
-    print(np.std(embed_mat, axis=0))
-    exit()
 
     batch_tr_X, batch_tr_y = utils.bin(train_X, train_y)
     for x, y in zip(batch_tr_X, batch_tr_y):
