@@ -78,8 +78,6 @@ def make_embed_mat(vocab_sz, embed_sz, known_word_embed):
     return embed_mat
 
 def bin(X, Y, bin_val=10, pad=0):
-    #  temp = sorted(zip(X, y), key = lambda t:(len(t[0])+bin_val-1) // bin_val)
-
     ret_X, ret_y = [], []
     for x, y in zip(X, Y):
         idx = (len(x) + bin_val - 1) // bin_val - 1

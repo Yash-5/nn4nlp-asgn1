@@ -12,6 +12,10 @@ import utils
 from models import Net
 
 if __name__ == '__main__':
+    exp_id = sys.argv[1]
+    logs_dir = "./logs/" + exp_id + "/"
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
     data_dir = "./data/"
     train_filename = "topicclass/topicclass_train.txt"
     valid_filename = "topicclass/topicclass_valid.txt"
@@ -19,9 +23,18 @@ if __name__ == '__main__':
     word2vec_filename = "GoogleNews-vectors-negative300.bin.gz"
 
     embed_filename = "./data/word2vec.npy"
-    epochs = 25
+    epochs = 5
     padding = 0
     batch_size = 32
+    learning_rate = 1e-3
+    mode = "random"
+    optimizer = "Adam"
+    with open(logs_dir + "params", "a") as params_file:
+        params_file.write("batch_size:" + str(batch_size) + "\n")
+        params_file.write("learning_rate:" + str(learning_rate) + "\n")
+        params_file.write("optimizer:" + optimizer + "\n")
+        params_file.write("embed_filename:" + embed_filename + "\n")
+        params_file.write("mode:" + str(mode) + "\n\n")
 
     train_X, train_y = utils.parse_file(data_dir + train_filename)
     valid_X, valid_y = utils.parse_file(data_dir + valid_filename)
@@ -68,14 +81,28 @@ if __name__ == '__main__':
     valid_iter_inits = valid_iter.make_initializer(valid_dataset)
     next_valid_elem = valid_iter.get_next()
 
-    model = Net(embed_mat, mode="nonstatic")
+    model = Net(embed_mat, mode=mode)
 
     train_logits = model.build_model(next_train_elem[0], True)
     train_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
                         labels=next_train_elem[1],
                         logits=train_logits
                     ))
-    optimizer_op = tf.train.AdadeltaOptimizer(0.003).minimize(train_loss_op, var_list=tf.trainable_variables())
+    if optimizer == "Adam":
+        optimizer_op = tf.train.AdadeltaOptimizer(learning_rate).minimize(
+                                            train_loss_op,
+                                            var_list=tf.trainable_variables()
+                                        )
+    elif optimizer == "Adagrad":
+        optimizer_op = tf.train.AdagradOptimizer(learning_rate).minimize(
+                                            train_loss_op,
+                                            var_list=tf.trainable_variables()
+                                        )
+    elif optimizer == "Adadelta":
+        optimizer_op = tf.train.AdadeltaOptimizer(learning_rate).minimize(
+                                            train_loss_op,
+                                            var_list=tf.trainable_variables()
+                                        )
 
     valid_logits = model.build_model(tf.expand_dims(next_valid_elem[0], 0), False)
     valid_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -86,23 +113,37 @@ if __name__ == '__main__':
     valid_acc = tf.contrib.metrics.accuracy(tf.expand_dims(next_valid_elem[1], 0), valid_preds)
     orig_label = next_valid_elem[1]
 
+    train_loss_file = open(logs_dir + "train_loss", "a")
+    valid_logs = open(logs_dir + "valid_logs", "a")
+
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
+
+    max_acuracy = 0
 
     for n in range(epochs):
         for i in tqdm(range(len(train_iter_inits)), leave=True):
             sess.run(train_iter_inits[i])
             while True:
                 try:
-                    sess.run(optimizer_op)
+                    train_loss, _ = sess.run([train_loss_op, optimizer_op])
+                    train_loss_file.write(str(train_loss) + "\n")
                 except tf.errors.OutOfRangeError:
                     break
         cor = 0
+        valid_loss = []
         sess.run(valid_iter_inits)
         while True:
             try:
-                t = sess.run([valid_acc])
+                t = sess.run([valid_acc, valid_loss_op])
                 cor += t[0]
+                valid_logs.append(t[1])
             except tf.errors.OutOfRangeError:
                 break
-        print(cor / len(valid_X))
+        avg_valid_logs = sum(valid_loss) / len(valid_loss)
+        valid_logs.write("Epoch" + str(n + 1) + ": " + \
+                            str(avg_valid_logs) + "\n")
+        accuracy = cor / len(valid_X)
+        if accuracy > max_acuracy:
+            max_acuracy = accuracy
+            model.save_model(sess, logs_dir + "Epoch-%d-%f" % (n+1, accuracy))
