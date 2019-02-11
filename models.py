@@ -9,11 +9,12 @@ class Embedding_model():
 
         if self.mode in ["static"]:
             self.emb_mat = tf.contrib.eager.Variable(emb_mat, trainable=False)
-        elif self.mode in ["rand", "nonstatic"]:
+        elif self.mode in ["rand", "nonstatic", "rs"]:
             self.emb_mat = tf.contrib.eager.Variable(emb_mat, trainable=True)
 
     def build_model(self, input):
         h = tf.nn.embedding_lookup(self.emb_mat, input)
+        h = h * tf.expand_dims(tf.cast(tf.sign(input), tf.float64), 2)
         return h
 
 class CNN():
@@ -73,17 +74,20 @@ class Net():
             dropout_rate=0.5,
             output_sz=16
     ):
-        assert mode in ["rand", "static", "nonstatic"], \
-                                "mode must be 'rand', 'static', 'nonstatic'"
+        assert mode in ["rand", "static", "nonstatic", "rs"], \
+                                "mode must be 'rand', 'static', 'nonstatic', 'rs'"
         assert len(num_filters) == len(filter_sz)
         self.emb_model = Embedding_model(emb_mat, mode)
-
+        self.mode = mode
         self.cnn_model = CNN(filter_sz, num_filters, act, dropout_rate, output_sz)
-        self.saver = tf.train.Saver(var_list=tf.trainable_variables())
 
     def build_model(self, input, training):
         embed_out = self.emb_model.build_model(input)
         output = self.cnn_model.build_model(embed_out, training)
+        if self.mode in ['rand', 'nonstatic', 'rs']:
+            self.saver = tf.train.Saver(var_list=tf.trainable_variables())
+        elif self.mode == 'static':
+            self.saver = tf.train.Saver(var_list=tf.trainable_variables() + [self.emb_model.emb_mat])
         return output
 
     def save_model(self, sess, save_file):

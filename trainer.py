@@ -27,17 +27,19 @@ if __name__ == '__main__':
 
     embed_filename = "./data/word2vec.npy"
     epochs = 5
+    dropout_rate = 0.5
     padding = 0
     batch_size = 32
     learning_rate = 1e-3
-    mode = "rand"
+    mode = "rs"
     optimizer = "Adam"
     load_file = None
-    with open(logs_dir + "params", "a") as params_file:
+    with open(logs_dir + "params", "w") as params_file:
         params_file.write("batch_size:" + str(batch_size) + "\n")
         params_file.write("learning_rate:" + str(learning_rate) + "\n")
         params_file.write("optimizer:" + optimizer + "\n")
         params_file.write("embed_filename:" + embed_filename + "\n")
+        params_file.write("dropout_rate:" + str(dropout_rate) + "\n")
         if load_file:
             params_file.write("load file:" + str(load_file) + "\n")
         params_file.write("mode:" + str(mode) + "\n\n")
@@ -45,18 +47,24 @@ if __name__ == '__main__':
     train_X, train_y = utils.parse_file(data_dir + train_filename)
     valid_X, valid_y = utils.parse_file(data_dir + valid_filename)
     test_X = utils.parse_file(data_dir + test_filename, has_labels=False)
+    unk_index = utils.word2index["<UNK>"]
 
-    if os.path.exists(embed_filename):
-        known_word_embed = np.load(embed_filename)
-        embed_sz = known_word_embed.shape[1] - 1
+    if mode in ["rs", "rand"]:
+        embed_sz = 300
+        embed_mat = np.random.randn(len(utils.word2index), embed_sz) * 0.25
+        embed_mat[unk_index] = 0 
     else:
-        known_word_embed, embed_sz = utils.save_bin_vec(
-                                            utils.word2index,
-                                            data_dir + word2vec_filename,
-                                            embed_filename
-                                     )
+        if os.path.exists(embed_filename):
+            known_word_embed = np.load(embed_filename)
+            embed_sz = known_word_embed.shape[1] - 1
+        else:
+            known_word_embed, embed_sz = utils.save_bin_vec(
+                                                utils.word2index,
+                                                data_dir + word2vec_filename,
+                                                embed_filename
+                                         )
 
-    embed_mat = utils.make_embed_mat(len(utils.word2index), embed_sz,
+        embed_mat = utils.make_embed_mat(len(utils.word2index), embed_sz,
                                             known_word_embed)
 
     binned_tr_X, binned_tr_y = utils.bin(train_X, train_y)
@@ -87,27 +95,38 @@ if __name__ == '__main__':
     valid_iter_inits = valid_iter.make_initializer(valid_dataset)
     next_valid_elem = valid_iter.get_next()
 
-    model = Net(embed_mat, mode=mode)
+    model = Net(embed_mat, mode=mode, dropout_rate=dropout_rate)
 
     train_logits = model.build_model(next_train_elem[0], True)
     train_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
                         labels=next_train_elem[1],
                         logits=train_logits
                     ))
+
+    if mode == "rs":
+        var_list = model.emb_model.emb_mat
+    elif mode in ["rand", "static", "nonstatic"]:
+        var_list=tf.trainable_variables()
+
     if optimizer == "Adam":
-        optimizer_op = tf.train.AdadeltaOptimizer(learning_rate).minimize(
+        optimizer_op = tf.train.AdamOptimizer(learning_rate).minimize(
                                             train_loss_op,
-                                            var_list=tf.trainable_variables()
+                                            var_list=var_list
                                         )
     elif optimizer == "Adagrad":
         optimizer_op = tf.train.AdagradOptimizer(learning_rate).minimize(
                                             train_loss_op,
-                                            var_list=tf.trainable_variables()
+                                            var_list=var_list
                                         )
     elif optimizer == "Adadelta":
         optimizer_op = tf.train.AdadeltaOptimizer(learning_rate).minimize(
                                             train_loss_op,
-                                            var_list=tf.trainable_variables()
+                                            var_list=var_list
+                                        )
+    elif optimizer == "SGD":
+        optimizer_op = tf.train.GradientDescentOptimizer(learning_rate).minimize(
+                                            train_loss_op,
+                                            var_list=var_list
                                         )
 
     valid_logits = model.build_model(tf.expand_dims(next_valid_elem[0], 0), False)
@@ -119,14 +138,14 @@ if __name__ == '__main__':
     valid_acc = tf.contrib.metrics.accuracy(tf.expand_dims(next_valid_elem[1], 0), valid_preds)
     orig_label = next_valid_elem[1]
 
-    train_loss_file = open(logs_dir + "train_loss", "a")
-    valid_logs = open(logs_dir + "valid_logs", "a")
+    train_loss_file = open(logs_dir + "train_loss", "w")
+    valid_logs = open(logs_dir + "valid_logs", "w")
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
     if load_file:
-        self.model.load_model(sess, load_file)
+        model.load_model(sess, load_file)
 
     max_acuracy = 0
 
@@ -153,6 +172,7 @@ if __name__ == '__main__':
         accuracy = cor / len(valid_X)
         valid_logs.write("Epoch" + str(n + 1) + ": " + \
                             str(avg_valid_loss) + " " + str(accuracy) + "\n")
+        valid_logs.flush()
         if accuracy > max_acuracy:
             max_acuracy = accuracy
             model.save_model(sess, models_dir + "Epoch-%d-%f" % (n+1, accuracy))
