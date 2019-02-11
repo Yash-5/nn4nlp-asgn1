@@ -88,8 +88,6 @@ if __name__ == '__main__':
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
-    sess.run(valid_iter_inits)
-
 
     for n in range(epochs):
         for i in tqdm(range(len(train_iter_inits)), leave=True):
@@ -99,14 +97,12 @@ if __name__ == '__main__':
                     sess.run(optimizer_op)
                 except tf.errors.OutOfRangeError:
                     break
-        tot = 0
         cor = 0
         sess.run(valid_iter_inits)
         while True:
             try:
                 t = sess.run([valid_acc])
                 cor += t[0]
-                tot += 1
             except tf.errors.OutOfRangeError:
                 break
-        print(cor, tot)
+        print(cor / len(valid_X))

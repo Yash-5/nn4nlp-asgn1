@@ -79,8 +79,15 @@ class Net():
         self.emb_model = Embedding_model(emb_mat, mode)
 
         self.cnn_model = CNN(filter_sz, num_filters, act, dropout_rate, output_sz)
+        self.saver = tf.train.Saver(var_list=tf.trainable_variables())
 
     def build_model(self, input, training):
         embed_out = self.emb_model.build_model(input)
         output = self.cnn_model.build_model(embed_out, training)
         return output
+
+    def save_model(self, sess, save_file):
+        self.saver.save(sess, save_file)
+
+    def load_model(self, sess, save_file):
+        self.saver.restore(sess, save_file)
