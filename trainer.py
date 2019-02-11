@@ -112,9 +112,9 @@ if __name__ == '__main__':
 
     valid_logits = model.build_model(tf.expand_dims(next_valid_elem[0], 0), False)
     valid_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
-                        labels=next_valid_elem[1],
+                        labels=tf.expand_dims(next_valid_elem[1], axis=0),
                         logits=valid_logits
-                   ))
+                    ))
     valid_preds = tf.argmax(valid_logits, axis=1, output_type=tf.int32)
     valid_acc = tf.contrib.metrics.accuracy(tf.expand_dims(next_valid_elem[1], 0), valid_preds)
     orig_label = next_valid_elem[1]
@@ -146,13 +146,13 @@ if __name__ == '__main__':
             try:
                 t = sess.run([valid_acc, valid_loss_op])
                 cor += t[0]
-                valid_logs.append(t[1])
+                valid_loss.append(t[1])
             except tf.errors.OutOfRangeError:
                 break
-        avg_valid_logs = sum(valid_loss) / len(valid_loss)
-        valid_logs.write("Epoch" + str(n + 1) + ": " + \
-                            str(avg_valid_logs) + "\n")
+        avg_valid_loss = sum(valid_loss) / len(valid_loss)
         accuracy = cor / len(valid_X)
+        valid_logs.write("Epoch" + str(n + 1) + ": " + \
+                            str(avg_valid_loss) + " " + str(accuracy) + "\n")
         if accuracy > max_acuracy:
             max_acuracy = accuracy
             model.save_model(sess, models_dir + "Epoch-%d-%f" % (n+1, accuracy))
