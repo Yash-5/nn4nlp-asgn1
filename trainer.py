@@ -2,11 +2,11 @@ import tensorflow as tf
 import gzip
 import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 import os
 from collections import Counter
 import itertools
 import random
+import sys
 
 import utils
 from models import Net
@@ -14,8 +14,11 @@ from models import Net
 if __name__ == '__main__':
     exp_id = sys.argv[1]
     logs_dir = "./logs/" + exp_id + "/"
+    models_dir = logs_dir + "models/"
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
+    if not os.path.exists(models_dir):
+        os.makedirs(models_dir)
     data_dir = "./data/"
     train_filename = "topicclass/topicclass_train.txt"
     valid_filename = "topicclass/topicclass_valid.txt"
@@ -27,13 +30,16 @@ if __name__ == '__main__':
     padding = 0
     batch_size = 32
     learning_rate = 1e-3
-    mode = "random"
+    mode = "rand"
     optimizer = "Adam"
+    load_file = None
     with open(logs_dir + "params", "a") as params_file:
         params_file.write("batch_size:" + str(batch_size) + "\n")
         params_file.write("learning_rate:" + str(learning_rate) + "\n")
         params_file.write("optimizer:" + optimizer + "\n")
         params_file.write("embed_filename:" + embed_filename + "\n")
+        if load_file:
+            params_file.write("load file:" + str(load_file) + "\n")
         params_file.write("mode:" + str(mode) + "\n\n")
 
     train_X, train_y = utils.parse_file(data_dir + train_filename)
@@ -119,6 +125,9 @@ if __name__ == '__main__':
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
+    if load_file:
+        self.model.load_model(sess, load_file)
+
     max_acuracy = 0
 
     for n in range(epochs):
@@ -146,4 +155,4 @@ if __name__ == '__main__':
         accuracy = cor / len(valid_X)
         if accuracy > max_acuracy:
             max_acuracy = accuracy
-            model.save_model(sess, logs_dir + "Epoch-%d-%f" % (n+1, accuracy))
+            model.save_model(sess, models_dir + "Epoch-%d-%f" % (n+1, accuracy))
