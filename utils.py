@@ -2,6 +2,7 @@ import gzip
 import numpy as np
 from tqdm import tqdm
 from collections import defaultdict
+import random
 
 label2index = defaultdict(lambda: len(label2index))
 word2index = defaultdict(lambda: len(word2index))
@@ -30,6 +31,19 @@ def save_bin_vec(vocab, fname, save_name):
     known_word_vecs = np.sort(known_word_vecs, axis=0)
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
+
+def random_split(train_X, train_y, valid_X, valid_y, val_perc=0.2, seed=0):
+    all_X = train_X + valid_X
+    all_y = train_y + valid_y
+    random.seed(seed)
+    all_data = list(zip(all_X, all_y))
+    random.shuffle(all_data)
+    all_X, all_y = zip(*all_data)
+    all_X, all_y = list(all_X), list(all_y)
+    val_idx = int(len(all_X) * val_perc)
+    train_X, train_y = all_X[val_idx:], all_y[val_idx:]
+    valid_X, valid_y = all_X[:val_idx], all_y[:val_idx]
+    return train_X, train_y, valid_X, valid_y
 
 def bin_stats(train_X):
     total = [0 for i in range(20)]

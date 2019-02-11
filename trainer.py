@@ -47,6 +47,15 @@ if __name__ == '__main__':
     train_X, train_y = utils.parse_file(data_dir + train_filename)
     valid_X, valid_y = utils.parse_file(data_dir + valid_filename)
     test_X = utils.parse_file(data_dir + test_filename, has_labels=False)
+
+    train_X, train_y, valid_X, valid_y = utils.random_split(
+                                            train_X,
+                                            train_y,
+                                            valid_X,
+                                            valid_y,
+                                            0.2
+                                        )
+
     unk_index = utils.word2index["<UNK>"]
 
     if mode in ["rs", "rand"]:
