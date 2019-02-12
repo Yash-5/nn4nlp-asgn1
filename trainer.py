@@ -31,7 +31,7 @@ if __name__ == '__main__':
     padding = 0
     batch_size = 32
     learning_rate = 1e-3
-    mode = "rs"
+    mode = "static"
     optimizer = "Adam"
     load_file = None
     with open(logs_dir + "params", "w") as params_file:
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                                             train_y,
                                             valid_X,
                                             valid_y,
-                                            0.2
+                                            300
                                         )
 
     unk_index = utils.word2index["<UNK>"]
