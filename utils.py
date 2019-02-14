@@ -3,34 +3,47 @@ import numpy as np
 from tqdm import tqdm
 from collections import defaultdict, Counter
 import random
+import mimetypes
 
 label2index = defaultdict(lambda: len(label2index))
 word2index = defaultdict(lambda: len(word2index))
 word2index["<UNK>"] # Putting UNK to 0
 
 def save_bin_vec(vocab, fname, save_name):
-    known_word_vecs = []
-    with gzip.open(fname, 'rb') as w2vfile:
-        header = w2vfile.readline()
-        vocab_sz, embed_sz = map(int, header.split())
-        embed_readlen = np.dtype('float32').itemsize * embed_sz
-        for v in tqdm(range(vocab_sz), leave=False):
-            word = b''
-            while True:
-                c = w2vfile.read(1)
-                if c == b' ':
-                    break
-                if c != b'\n':
-                    word += c
-            word = word.decode('utf-8')
-            embedding = w2vfile.read(embed_readlen)
-            if word in vocab:
-                known_word_vecs.append(np.append([vocab[word]],
-                                    np.frombuffer(embedding, dtype='float32')))
+    if mimetypes.guess_type(fname) == ('application/octet-stream', 'gzip'):
+        known_word_vecs = []
+        with gzip.open(fname, 'rb') as w2vfile:
+            header = w2vfile.readline()
+            vocab_sz, embed_sz = map(int, header.split())
+            embed_readlen = np.dtype('float32').itemsize * embed_sz
+            for v in tqdm(range(vocab_sz), leave=False):
+                word = b''
+                while True:
+                    c = w2vfile.read(1)
+                    if c == b' ':
+                        break
+                    if c != b'\n':
+                        word += c
+                word = word.decode('utf-8')
+                embedding = w2vfile.read(embed_readlen)
+                if word in vocab:
+                    known_word_vecs.append(np.append([vocab[word]],
+                                        np.frombuffer(embedding, dtype='float32')))
+    elif mimetypes.guess_type(fname) == (None, None):
+        known_word_vecs = []
+        with open(fname, 'r') as w2vfile:
+            header = w2vfile.readline()
+            vocab_sz, embed_sz = map(int, header.split())
+            for v in tqdm(range(vocab_sz), leave=False):
+                line = w2vfile.readline().split()
+                word, vec = line[0], line[1:]
+                if word in vocab:
+                    known_word_vecs.append([vocab[word]] + list(map(float, vec)))
     known_word_vecs = np.array(known_word_vecs)
     known_word_vecs = np.sort(known_word_vecs, axis=0)
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
+
 
 def random_split(train_X, train_y, valid_X, valid_y, val_req=0.05, seed=0):
     random.seed(seed)
