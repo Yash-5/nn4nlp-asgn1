@@ -45,20 +45,6 @@ def save_bin_vec(vocab, fname, save_name):
     return known_word_vecs, embed_sz
 
 
-def random_split(train_X, train_y, valid_X, valid_y, val_req=0.05, seed=0):
-    random.seed(seed)
-    num_sample = int(len(train_X) * val_req)
-    idx = random.sample(list(range(len(train_X))), num_sample)
-    for i in idx:
-        valid_X.append(train_X[i])
-        valid_y.append(train_y[i])
-        train_X[i] = None
-        train_y[i] = None
-    train_X = [X for X in train_X if X]
-    train_y = [y for y in train_y if y]
-
-    return train_X, train_y, valid_X, valid_y
-
 def bin_stats(train_X):
     total = [0 for i in range(20)]
     m, M = 100, 0
@@ -93,7 +79,6 @@ def make_embed_mat(vocab_sz, embed_sz, known_word_embed):
     rand_emb = lambda : np.random.uniform(-0.25, 0.25, embed_sz)
     embed_mat = np.zeros(shape=(len(word2index), embed_sz))
     j = 0
-    tot = 0
     for i in range(1, embed_mat.shape[0]):
         if j < known_word_embed.shape[0] and i == int(known_word_embed[j, 0]):
             embed_mat[i] = known_word_embed[j, 1:]
