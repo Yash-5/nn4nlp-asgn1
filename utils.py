@@ -32,22 +32,17 @@ def save_bin_vec(vocab, fname, save_name):
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
 
-def random_split(train_X, train_y, valid_X, valid_y, val_req=100, seed=0):
+def random_split(train_X, train_y, valid_X, valid_y, val_req=0.05, seed=0):
     random.seed(seed)
-    tr_data = list(zip(train_X, train_y))
-    random.shuffle(tr_data)
-    train_X, train_y = [], []
-
-    val_cnt = Counter(valid_y)
-
-    for pt in tr_data:
-        if val_cnt[pt[1]] < val_req:
-            val_cnt[pt[1]] += 1
-            valid_X.append(pt[0])
-            valid_y.append(pt[1])
-        else:
-            train_X.append(pt[0])
-            train_y.append(pt[1])
+    num_sample = int(len(train_X) * val_req)
+    idx = random.sample(list(range(len(train_X))), num_sample)
+    for i in idx:
+        valid_X.append(train_X[i])
+        valid_y.append(train_y[i])
+        train_X[i] = None
+        train_y[i] = None
+    train_X = [X for X in train_X if X]
+    train_y = [y for y in train_y if y]
 
     return train_X, train_y, valid_X, valid_y
 
@@ -81,11 +76,8 @@ def parse_file(fname, has_labels=True, delimiter="|||"):
 
 def make_embed_mat(vocab_sz, embed_sz, known_word_embed):
     global word2index
-    known_vec_mean, known_vec_std = np.mean(known_word_embed[:, 1:], axis=0), \
-                                    np.std(known_word_embed[:, 1:], axis=0)
 
-    rand_emb = lambda : np.random.randn(embed_sz) * known_vec_std + \
-                            known_vec_mean
+    rand_emb = lambda : np.random.uniform(-0.25, 0.25, embed_sz)
     embed_mat = np.zeros(shape=(len(word2index), embed_sz))
     j = 0
     tot = 0

@@ -69,17 +69,19 @@ class Net():
             num_filters=[100, 100, 100],
             act=tf.nn.relu,
             dropout_rate=0.5,
-            output_sz=16
+            output_sz=16,
+            max_to_keep=2
     ):
         assert len(num_filters) == len(filter_sz)
         self.emb_model = Embedding_model(emb_mat, mode)
         self.mode = mode
+        self.max_to_keep = max_to_keep
         self.cnn_model = CNN(filter_sz, num_filters, act, dropout_rate, output_sz)
 
     def build_model(self, input, training):
         embed_out = self.emb_model.build_model(input)
         output = self.cnn_model.build_model(embed_out, training)
-        self.saver = tf.train.Saver(var_list=tf.trainable_variables())
+        self.saver = tf.train.Saver(var_list=tf.trainable_variables(), max_to_keep=self.max_to_keep)
         return output
 
     def save_model(self, sess, save_file):

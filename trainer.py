@@ -32,17 +32,26 @@ def parse_args():
                         default=1e-3, type=float)
     parser.add_argument("-mode", action="store", dest="mode", \
                         default="rand", choices={"rand", "nonstatic"})
-    parser.add_argument("-opt", action="store", dest="mode", \
+    parser.add_argument("-opt", action="store", dest="opt", \
                         default="Adam", choices={"Adam", "Adagrad", "Adadelta"})
     parser.add_argument("-model", action="store", dest="model", \
                         default=None)
     args = parser.parse_args()
     return args
 
+def measure_confusion(sess, next_valid_elem, valid_preds, valid_iter_inits, num_labels=16):
+    confusion = np.zeros((num_labels, num_labels))
+    sess.run(valid_iter_inits)
+    while True:
+        try:
+            label, pred = sess.run([next_valid_elem[1], valid_preds])
+            confusion[label][pred[0]] += 1
+        except tf.errors.OutOfRangeError:
+            break
+    return confusion
+
 if __name__ == '__main__':
     args = parse_args()
-    pprint(vars(args))
-    exit()
     exp_id = args.id
     logs_dir = "./logs/" + exp_id + "/"
     models_dir = logs_dir + "models/"
@@ -57,7 +66,7 @@ if __name__ == '__main__':
     word2vec_filename = args.vec_file
     embed_filename = args.emb_file
     epochs = args.epochs
-    dropout_rate = args.dropout
+    dropout_rate = args.dropout_rate
     batch_size = args.batch_size
     learning_rate = args.lr
     mode = args.mode
@@ -66,14 +75,7 @@ if __name__ == '__main__':
 
     padding = 0
     with open(logs_dir + "params", "w") as params_file:
-        params_file.write("batch_size:" + str(batch_size) + "\n")
-        params_file.write("learning_rate:" + str(learning_rate) + "\n")
-        params_file.write("optimizer:" + optimizer + "\n")
-        params_file.write("embed_filename:" + embed_filename + "\n")
-        params_file.write("dropout_rate:" + str(dropout_rate) + "\n")
-        if load_file:
-            params_file.write("load file:" + str(load_file) + "\n")
-        params_file.write("mode:" + str(mode) + "\n\n")
+        pprint(vars(args), params_file)
 
     train_X, train_y = utils.parse_file(data_dir + train_filename)
     valid_X, valid_y = utils.parse_file(data_dir + valid_filename)
@@ -83,15 +85,14 @@ if __name__ == '__main__':
                                             train_X,
                                             train_y,
                                             valid_X,
-                                            valid_y,
-                                            100
+                                            valid_y
                                         )
 
     unk_index = utils.word2index["<UNK>"]
 
     if mode in ["rs", "rand"]:
         embed_sz = 300
-        embed_mat = np.random.randn(len(utils.word2index), embed_sz) * 0.25
+        embed_mat = np.random.uniform(-0.25, 0.25, size=(len(utils.word2index), embed_sz))
         embed_mat[unk_index] = 0 
     else:
         if os.path.exists(embed_filename):
@@ -143,11 +144,7 @@ if __name__ == '__main__':
                         logits=train_logits
                     ))
 
-    if mode == "rs":
-        var_list = model.emb_model.emb_mat
-    elif mode in ["rand", "static", "nonstatic"]:
-        var_list=tf.trainable_variables()
-
+    var_list=tf.trainable_variables()
     if optimizer == "Adam":
         optimizer_op = tf.train.AdamOptimizer(learning_rate).minimize(
                                             train_loss_op,
@@ -184,6 +181,8 @@ if __name__ == '__main__':
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
+    measure_confusion(sess, next_valid_elem, valid_preds, valid_iter_inits)
+    
     if load_file:
         model.load_model(sess, load_file)
 
