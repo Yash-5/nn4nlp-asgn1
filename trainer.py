@@ -7,12 +7,43 @@ from collections import Counter
 import itertools
 import random
 import sys
+import argparse
+from pprint import pprint
 
 import utils
 from models import Net
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("id")
+    parser.add_argument("-vec_file", action="store", dest="vec_file", \
+                        default="data/GoogleNews-vectors-negative300.bin.gz",
+                        help="Path to raw embeddings file")
+    parser.add_argument("-emb_file", action="store", dest="emb_file", \
+                        default="data/word2vec.npy",
+                        help="Path to embeddings saved as np file")
+    parser.add_argument("-epochs", action="store", dest="epochs", \
+                        default=5, type=int)
+    parser.add_argument("-dropout", action="store", dest="dropout_rate", \
+                        default=0.5, type=float)
+    parser.add_argument("-batch_size", action="store", dest="batch_size", \
+                        default=32, type=int)
+    parser.add_argument("-lr", action="store", dest="lr", \
+                        default=1e-3, type=float)
+    parser.add_argument("-mode", action="store", dest="mode", \
+                        default="rand", choices={"rand", "nonstatic"})
+    parser.add_argument("-opt", action="store", dest="mode", \
+                        default="Adam", choices={"Adam", "Adagrad", "Adadelta"})
+    parser.add_argument("-model", action="store", dest="model", \
+                        default=None)
+    args = parser.parse_args()
+    return args
+
 if __name__ == '__main__':
-    exp_id = sys.argv[1]
+    args = parse_args()
+    pprint(vars(args))
+    exit()
+    exp_id = args.id
     logs_dir = "./logs/" + exp_id + "/"
     models_dir = logs_dir + "models/"
     if not os.path.exists(logs_dir):
@@ -23,17 +54,17 @@ if __name__ == '__main__':
     train_filename = "topicclass/topicclass_train.txt"
     valid_filename = "topicclass/topicclass_valid.txt"
     test_filename = "topicclass/topicclass_test.txt"
-    word2vec_filename = "GoogleNews-vectors-negative300.bin.gz"
+    word2vec_filename = args.vec_file
+    embed_filename = args.emb_file
+    epochs = args.epochs
+    dropout_rate = args.dropout
+    batch_size = args.batch_size
+    learning_rate = args.lr
+    mode = args.mode
+    optimizer = args.opt
+    load_file = args.model
 
-    embed_filename = "./data/word2vec.npy"
-    epochs = 5
-    dropout_rate = 0.5
     padding = 0
-    batch_size = 32
-    learning_rate = 1e-3
-    mode = "static"
-    optimizer = "Adam"
-    load_file = None
     with open(logs_dir + "params", "w") as params_file:
         params_file.write("batch_size:" + str(batch_size) + "\n")
         params_file.write("learning_rate:" + str(learning_rate) + "\n")
@@ -69,7 +100,7 @@ if __name__ == '__main__':
         else:
             known_word_embed, embed_sz = utils.save_bin_vec(
                                                 utils.word2index,
-                                                data_dir + word2vec_filename,
+                                                word2vec_filename,
                                                 embed_filename
                                          )
 
