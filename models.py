@@ -7,7 +7,7 @@ class Embedding_model():
         self.mode = mode
         self.vocab_sz, self.embed_sz = emb_mat.shape
 
-        self.emb_mat = tf.contrib.eager.Variable(emb_mat, trainable=True)
+        self.emb_mat = tf.Variable(emb_mat, trainable=True)
 
     def build_model(self, input):
         h = tf.nn.embedding_lookup(self.emb_mat, input)
