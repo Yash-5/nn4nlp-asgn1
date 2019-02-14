@@ -71,8 +71,6 @@ class Net():
             dropout_rate=0.5,
             output_sz=16
     ):
-        assert mode in ["rand", "nonstatic"], \
-                                "mode must be 'rand', 'nonstatic'"
         assert len(num_filters) == len(filter_sz)
         self.emb_model = Embedding_model(emb_mat, mode)
         self.mode = mode
