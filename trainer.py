@@ -53,7 +53,7 @@ if __name__ == '__main__':
                                             train_y,
                                             valid_X,
                                             valid_y,
-                                            300
+                                            100
                                         )
 
     unk_index = utils.word2index["<UNK>"]

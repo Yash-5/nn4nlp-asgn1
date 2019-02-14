@@ -32,7 +32,7 @@ def save_bin_vec(vocab, fname, save_name):
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
 
-def random_split(train_X, train_y, valid_X, valid_y, val_req=300, seed=0):
+def random_split(train_X, train_y, valid_X, valid_y, val_req=100, seed=0):
     random.seed(seed)
     tr_data = list(zip(train_X, train_y))
     random.shuffle(tr_data)
