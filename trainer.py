@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     unk_index = utils.word2index["<UNK>"]
 
-    if mode in ["rs", "rand"]:
+    if mode == "rand":
         embed_sz = 300
         embed_mat = np.random.uniform(-0.25, 0.25, size=(len(utils.word2index), embed_sz))
         embed_mat[unk_index] = 0 
