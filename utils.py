@@ -10,7 +10,8 @@ word2index = defaultdict(lambda: len(word2index))
 word2index["<UNK>"] # Putting UNK to 0
 
 def save_bin_vec(vocab, fname, save_name):
-    if mimetypes.guess_type(fname) == ('application/octet-stream', 'gzip'):
+    print(mimetypes.guess_type(fname))
+    if mimetypes.guess_type(fname)[1] == 'gzip':
         known_word_vecs = []
         with gzip.open(fname, 'rb') as w2vfile:
             header = w2vfile.readline()
@@ -29,7 +30,7 @@ def save_bin_vec(vocab, fname, save_name):
                 if word in vocab:
                     known_word_vecs.append(np.append([vocab[word]],
                                         np.frombuffer(embedding, dtype='float32')))
-    elif mimetypes.guess_type(fname) == (None, None):
+    elif mimetypes.guess_type(fname)[1] == None:
         known_word_vecs = []
         with open(fname, 'r') as w2vfile:
             header = w2vfile.readline()
@@ -40,6 +41,7 @@ def save_bin_vec(vocab, fname, save_name):
                 if word in vocab:
                     known_word_vecs.append([vocab[word]] + list(map(float, vec)))
     known_word_vecs = np.array(known_word_vecs)
+    print(known_word_vecs.shape)
     known_word_vecs = np.sort(known_word_vecs, axis=0)
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
@@ -54,7 +56,7 @@ def bin_stats(train_X):
     print("min is %d, max is %d" % (m, M))
     print(total)
 
-def parse_file(fname, has_labels=True, delimiter="|||"):
+def parse_file(fname, has_labels=True, delimiter="|||", lower_case=False):
     global label2index
     global word2index
     X = []
@@ -67,6 +69,8 @@ def parse_file(fname, has_labels=True, delimiter="|||"):
             if has_labels:
                 y.append(label2index[label.strip()])
             words = words.strip().split()
+            if lower_case:
+                words = list(map(str.lower, words))
             for word in words:
                 X[-1].append(word2index[word])
     if has_labels:
