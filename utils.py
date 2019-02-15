@@ -80,7 +80,12 @@ def parse_file(fname, has_labels=True, delimiter="|||", lower_case=False):
 def make_embed_mat(vocab_sz, embed_sz, known_word_embed):
     global word2index
 
-    rand_emb = lambda : np.random.uniform(-0.25, 0.25, embed_sz)
+    known_vec_mean, known_vec_std = np.mean(known_word_embed[:, 1:], axis=0), \
+                                    np.std(known_word_embed[:, 1:], axis=0)
+
+    rand_emb = lambda : np.random.randn(embed_sz) * known_vec_std + \
+                            known_vec_mean
+
     embed_mat = np.zeros(shape=(len(word2index), embed_sz))
     j = 0
     for i in range(1, embed_mat.shape[0]):
