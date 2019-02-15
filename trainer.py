@@ -30,6 +30,8 @@ def parse_args():
                         default=32, type=int)
     parser.add_argument("-lr", action="store", dest="lr", \
                         default=1e-3, type=float)
+    parser.add_argument("-lower", action="store", dest="lower_case", \
+                        default=False, type=bool)
     parser.add_argument("-mode", action="store", dest="mode", \
                         default="rand", choices={"rand", "nonstatic"})
     parser.add_argument("-opt", action="store", dest="opt", \
@@ -72,21 +74,18 @@ if __name__ == '__main__':
     mode = args.mode
     optimizer = args.opt
     load_file = args.model
+    lower_case = args.lower_case
 
     padding = 0
     with open(logs_dir + "params", "w") as params_file:
         pprint(vars(args), params_file)
 
-    train_X, train_y = utils.parse_file(data_dir + train_filename)
-    valid_X, valid_y = utils.parse_file(data_dir + valid_filename)
-    test_X = utils.parse_file(data_dir + test_filename, has_labels=False)
-
-    train_X, train_y, valid_X, valid_y = utils.random_split(
-                                            train_X,
-                                            train_y,
-                                            valid_X,
-                                            valid_y
-                                        )
+    train_X, train_y = utils.parse_file(data_dir + train_filename,
+                                        lower_case=lower_case)
+    valid_X, valid_y = utils.parse_file(data_dir + valid_filename,
+                                        lower_case=lower_case)
+    test_X = utils.parse_file(data_dir + test_filename, has_labels=False,
+                              lower_case=lower_case)
 
     unk_index = utils.word2index["<UNK>"]
 
