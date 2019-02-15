@@ -36,6 +36,8 @@ def parse_args():
                         default="rand", choices={"rand", "nonstatic"})
     parser.add_argument("-opt", action="store", dest="opt", \
                         default="Adam", choices={"Adam", "Adagrad", "Adadelta"})
+    parser.add_argument("-hidden", action="store", dest="hidden", \
+                        default=256, type=int)
     parser.add_argument("-model", action="store", dest="model", \
                         default=None)
     args = parser.parse_args()
@@ -92,7 +94,6 @@ if __name__ == '__main__':
     if mode == "rand":
         embed_sz = 300
         embed_mat = np.random.uniform(-0.25, 0.25, size=(len(utils.word2index), embed_sz))
-        embed_mat[unk_index] = 0 
     else:
         if os.path.exists(embed_filename):
             known_word_embed = np.load(embed_filename)
@@ -106,11 +107,9 @@ if __name__ == '__main__':
 
         embed_mat = utils.make_embed_mat(len(utils.word2index), embed_sz,
                                             known_word_embed)
+    embed_mat[0] = 0 
 
     binned_tr_X, binned_tr_y = utils.bin(train_X, train_y)
-
-    for x, y in zip(binned_tr_X, binned_tr_y):
-        print(len(x), len(y))
 
     batch_tr_dataset = []
     for i in range(len(binned_tr_X)):
@@ -121,7 +120,6 @@ if __name__ == '__main__':
                                 buffer_size=len(binned_tr_X[i])
                            ).batch(batch_size)
         )
-        print(type(batch_tr_dataset[-1]))
     train_iter = tf.data.Iterator.from_structure((tf.int32, tf.int32),
                                                 ([None, None], [None]))
     train_iter_inits = [train_iter.make_initializer(x) for x in \
@@ -135,7 +133,7 @@ if __name__ == '__main__':
     valid_iter_inits = valid_iter.make_initializer(valid_dataset)
     next_valid_elem = valid_iter.get_next()
 
-    model = Net(embed_mat, mode=mode, dropout_rate=dropout_rate)
+    model = Net(embed_mat, mode=mode, dropout_rate=dropout_rate, hidden_sz=hidden_sz)
 
     train_logits = model.build_model(next_train_elem[0], True)
     train_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -180,7 +178,7 @@ if __name__ == '__main__':
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    measure_confusion(sess, next_valid_elem, valid_preds, valid_iter_inits)
+    #  measure_confusion(sess, next_valid_elem, valid_preds, valid_iter_inits)
     
     if load_file:
         model.load_model(sess, load_file)
