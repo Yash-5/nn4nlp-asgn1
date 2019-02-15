@@ -65,7 +65,6 @@ class Net():
     def __init__(
             self,
             emb_mat,
-            mode="rand",
             filter_sz=[3, 4, 5],
             num_filters=[100, 100, 100],
             act=tf.nn.relu,
