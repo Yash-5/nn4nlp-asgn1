@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument("-lr", action="store", dest="lr", \
                         default=1e-3, type=float)
     parser.add_argument("-lower", action="store", dest="lower_case", \
-                        default=False, type=bool)
+                        default=0, type=int)
     parser.add_argument("-mode", action="store", dest="mode", \
                         default="rand", choices={"rand", "nonstatic"})
     parser.add_argument("-opt", action="store", dest="opt", \
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     mode = args.mode
     optimizer = args.opt
     load_file = args.model
-    lower_case = args.lower_case
+    lower_case = bool(args.lower_case)
 
     padding = 0
     with open(logs_dir + "params", "w") as params_file:
