@@ -140,26 +140,21 @@ if __name__ == '__main__':
                         logits=train_logits
                     ))
 
-    var_list=tf.trainable_variables()
     if optimizer == "Adam":
         optimizer_op = tf.train.AdamOptimizer(learning_rate).minimize(
-                                            train_loss_op,
-                                            var_list=var_list
+                                            train_loss_op
                                         )
     elif optimizer == "Adagrad":
         optimizer_op = tf.train.AdagradOptimizer(learning_rate).minimize(
-                                            train_loss_op,
-                                            var_list=var_list
+                                            train_loss_op
                                         )
     elif optimizer == "Adadelta":
         optimizer_op = tf.train.AdadeltaOptimizer(learning_rate).minimize(
-                                            train_loss_op,
-                                            var_list=var_list
+                                            train_loss_op
                                         )
     elif optimizer == "SGD":
         optimizer_op = tf.train.GradientDescentOptimizer(learning_rate).minimize(
-                                            train_loss_op,
-                                            var_list=var_list
+                                            train_loss_op
                                         )
 
     valid_logits = model.build_model(tf.expand_dims(next_valid_elem[0], 0), False)
@@ -169,7 +164,6 @@ if __name__ == '__main__':
                     ))
     valid_preds = tf.argmax(valid_logits, axis=1, output_type=tf.int32)
     valid_acc = tf.contrib.metrics.accuracy(tf.expand_dims(next_valid_elem[1], 0), valid_preds)
-    orig_label = next_valid_elem[1]
 
     train_loss_file = open(logs_dir + "train_loss", "w")
     valid_logs = open(logs_dir + "valid_logs", "w")
@@ -205,7 +199,7 @@ if __name__ == '__main__':
                 break
         avg_valid_loss = sum(valid_loss) / len(valid_loss)
         accuracy = cor / len(valid_X)
-        valid_logs.write("Epoch" + str(n + 1) + ": " + \
+        valid_logs.write("Epoch " + str(n + 1) + ": " + \
                             str(avg_valid_loss) + " " + str(accuracy) + "\n")
         valid_logs.flush()
         if accuracy > max_acuracy:
