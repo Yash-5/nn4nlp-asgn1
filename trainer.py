@@ -35,7 +35,8 @@ def parse_args():
     parser.add_argument("-mode", action="store", dest="mode", \
                         default="rand", choices={"rand", "nonstatic"})
     parser.add_argument("-opt", action="store", dest="opt", \
-                        default="Adam", choices={"Adam", "Adagrad", "Adadelta"})
+                        default="Adam", \
+                        choices={"Adam", "Adagrad", "Adadelta", "SGD"})
     parser.add_argument("-model", action="store", dest="model", \
                         default=None)
     args = parser.parse_args()
