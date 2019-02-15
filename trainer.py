@@ -36,8 +36,6 @@ def parse_args():
                         default="rand", choices={"rand", "nonstatic"})
     parser.add_argument("-opt", action="store", dest="opt", \
                         default="Adam", choices={"Adam", "Adagrad", "Adadelta"})
-    parser.add_argument("-hidden", action="store", dest="hidden", \
-                        default=256, type=int)
     parser.add_argument("-model", action="store", dest="model", \
                         default=None)
     args = parser.parse_args()
@@ -133,7 +131,7 @@ if __name__ == '__main__':
     valid_iter_inits = valid_iter.make_initializer(valid_dataset)
     next_valid_elem = valid_iter.get_next()
 
-    model = Net(embed_mat, mode=mode, dropout_rate=dropout_rate, hidden_sz=hidden_sz)
+    model = Net(embed_mat, mode=mode, dropout_rate=dropout_rate)
 
     train_logits = model.build_model(next_train_elem[0], True)
     train_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
