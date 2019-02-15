@@ -40,7 +40,6 @@ def save_bin_vec(vocab, fname, save_name):
                 if word in vocab:
                     known_word_vecs.append([vocab[word]] + list(map(float, vec)))
     known_word_vecs = np.array(known_word_vecs)
-    print(known_word_vecs.shape)
     known_word_vecs = np.sort(known_word_vecs, axis=0)
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
