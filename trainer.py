@@ -17,10 +17,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("id")
     parser.add_argument("-vec_file", action="store", dest="vec_file", \
-                        default="data/GoogleNews-vectors-negative300.bin.gz",
+                        default=None,
                         help="Path to raw embeddings file")
     parser.add_argument("-emb_file", action="store", dest="emb_file", \
-                        default="data/word2vec.npy",
+                        default=None,
                         help="Path to embeddings saved as np file")
     parser.add_argument("-epochs", action="store", dest="epochs", \
                         default=5, type=int)

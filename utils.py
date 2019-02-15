@@ -10,7 +10,6 @@ word2index = defaultdict(lambda: len(word2index))
 word2index["<UNK>"] # Putting UNK to 0
 
 def save_bin_vec(vocab, fname, save_name):
-    print(mimetypes.guess_type(fname))
     if mimetypes.guess_type(fname)[1] == 'gzip':
         known_word_vecs = []
         with gzip.open(fname, 'rb') as w2vfile:

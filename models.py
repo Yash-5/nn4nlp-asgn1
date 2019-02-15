@@ -40,6 +40,7 @@ class CNN():
                     kernel_size=k,
                     activation=self.act,
                     name=self.name + "conv" + str(i),
+                    kernel_initializer=tf.initializers.he_uniform(),
                     reuse=tf.AUTO_REUSE
                 ),
                 axis=1
@@ -55,6 +56,7 @@ class CNN():
                 units=self.output_sz,
                 activation=None,
                 name=self.name + "fc",
+                kernel_initializer=tf.initializers.glorot_uniform(),
                 reuse=tf.AUTO_REUSE
             )
         return h
