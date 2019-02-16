@@ -65,7 +65,6 @@ class Net():
     def __init__(
             self,
             emb_mat,
-            mode="rand",
             filter_sz=[3, 4, 5],
             num_filters=[100, 100, 100],
             act=tf.nn.relu,
@@ -89,4 +88,4 @@ class Net():
         self.saver.save(sess, save_file)
 
     def load_model(self, sess, save_file):
-        self.saver.restore(sess, save_file)
+        self.saver.restore(sess, tf.train.latest_checkpoint(save_file))

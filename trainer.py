@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument("-lr", action="store", dest="lr", \
                         default=1e-3, type=float)
     parser.add_argument("-lower", action="store", dest="lower_case", \
-                        default=False, type=bool)
+                        default=0, type=int)
     parser.add_argument("-mode", action="store", dest="mode", \
                         default="rand", choices={"rand", "nonstatic"})
     parser.add_argument("-opt", action="store", dest="opt", \
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     mode = args.mode
     optimizer = args.opt
     load_file = args.model
-    lower_case = args.lower_case
+    lower_case = bool(args.lower_case)
 
     padding = 0
     with open(logs_dir + "params", "w") as params_file:
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     valid_iter_inits = valid_iter.make_initializer(valid_dataset)
     next_valid_elem = valid_iter.get_next()
 
-    model = Net(embed_mat, mode=mode, dropout_rate=dropout_rate)
+    model = Net(embed_mat, dropout_rate=dropout_rate)
 
     train_logits = model.build_model(next_train_elem[0], True)
     train_loss_op = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
