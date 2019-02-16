@@ -10,8 +10,8 @@ word2index = defaultdict(lambda: len(word2index))
 word2index["<UNK>"] # Putting UNK to 0
 
 def save_bin_vec(vocab, fname, save_name):
+    known_word_vecs = []
     if mimetypes.guess_type(fname)[1] == 'gzip':
-        known_word_vecs = []
         with gzip.open(fname, 'rb') as w2vfile:
             header = w2vfile.readline()
             vocab_sz, embed_sz = map(int, header.split())
@@ -30,7 +30,6 @@ def save_bin_vec(vocab, fname, save_name):
                     known_word_vecs.append(np.append([vocab[word]],
                                         np.frombuffer(embedding, dtype='float32')))
     elif mimetypes.guess_type(fname)[1] == None:
-        known_word_vecs = []
         with open(fname, 'r') as w2vfile:
             header = w2vfile.readline()
             vocab_sz, embed_sz = map(int, header.split())
@@ -39,8 +38,8 @@ def save_bin_vec(vocab, fname, save_name):
                 word, vec = line[0], line[1:]
                 if word in vocab:
                     known_word_vecs.append([vocab[word]] + list(map(float, vec)))
+    known_word_vecs.sort(key = lambda x: x[0])
     known_word_vecs = np.array(known_word_vecs)
-    known_word_vecs = np.sort(known_word_vecs, axis=0)
     np.save(save_name, known_word_vecs)
     return known_word_vecs, embed_sz
 
@@ -82,7 +81,7 @@ def make_embed_mat(vocab_sz, embed_sz, known_word_embed):
                                     np.std(known_word_embed[:, 1:], axis=0)
 
     rand_emb = lambda : np.random.randn(embed_sz) * known_vec_std + \
-                            known_vec_mean
+                                        known_vec_mean
 
     embed_mat = np.zeros(shape=(len(word2index), embed_sz))
     j = 0

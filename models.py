@@ -88,4 +88,4 @@ class Net():
         self.saver.save(sess, save_file)
 
     def load_model(self, sess, save_file):
-        self.saver.restore(sess, save_file)
+        self.saver.restore(sess, tf.train.latest_checkpoint(save_file))
